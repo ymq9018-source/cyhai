@@ -28,10 +28,11 @@ jobs:
         with:
           accept-android-sdk-licenses: true
           cmdline-tools-version: latest
+          packages: platform-tools
 
-      - name: Install Android SDK packages
+      - name: Install Android SDK platform and build tools
         run: |
-          /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
