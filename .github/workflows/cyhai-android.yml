@@ -1,0 +1,84 @@
+name: Cyhai Android build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cyhai-pocketpal-rebuild
+  cancel-in-progress: false
+
+jobs:
+  bootstrap-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout Cyhai bootstrap branch
+        uses: actions/checkout@v4
+        with:
+          ref: pocketpal-rebuild
+          fetch-depth: 0
+
+      - name: Prepare PocketPal source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/a-ghorbani/pocketpal-ai.git "$RUNNER_TEMP/pocketpal"
+          bash "$GITHUB_WORKSPACE/scripts/apply-cyhai-branding.sh" "$RUNNER_TEMP/pocketpal"
+          mkdir -p "$RUNNER_TEMP/pocketpal/.github/workflows" "$RUNNER_TEMP/pocketpal/scripts"
+          cp "$GITHUB_WORKSPACE/.github/workflows/cyhai-android.yml" "$RUNNER_TEMP/pocketpal/.github/workflows/cyhai-android.yml"
+          cp "$GITHUB_WORKSPACE/scripts/apply-cyhai-branding.sh" "$RUNNER_TEMP/pocketpal/scripts/apply-cyhai-branding.sh"
+          cd "$RUNNER_TEMP/pocketpal"
+          git init
+          git checkout -b pocketpal-rebuild
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "build: bootstrap Cyhai from PocketPal with Chinese default"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin HEAD:pocketpal-rebuild
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.21.0'
+
+      - name: Set up Yarn
+        run: npm install --global yarn@1.22.22
+
+      - name: Install Android SDK components
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager "ndk;27.1.12297006"
+
+      - name: Install dependencies
+        working-directory: ${{ runner.temp }}/pocketpal
+        run: |
+          cp .env.example .env
+          yarn install --frozen-lockfile
+
+      - name: Build ARM64 Android APK
+        working-directory: ${{ runner.temp }}/pocketpal
+        run: |
+          cd android
+          ./gradlew assembleProdDebug -PreactNativeArchitectures=arm64-v8a --no-daemon
+          cd ..
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyhai-pocketpal-arm64-debug-apk
+          path: android/app/build/outputs/apk/prod/debug/app-prod-debug.apk
+          if-no-files-found: error
+          retention-days: 14
