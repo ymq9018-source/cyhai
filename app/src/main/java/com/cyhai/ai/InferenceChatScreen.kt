@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.File
 
 @Composable
@@ -45,16 +46,10 @@ fun InferenceChatScreen(activeModel: ImportedModel?) {
             return@LaunchedEffect
         }
         busy = true
-        status = "正在准备模型文件…"
+        status = "正在复制模型文件到应用内部存储…"
         try {
-            val readyState = engine.state.first {
-                it is InferenceEngine.State.Initialized ||
-                    it is InferenceEngine.State.ModelReady ||
-                    it is InferenceEngine.State.Error
-            }
-            if (readyState is InferenceEngine.State.Error) throw readyState.exception
-            if (readyState is InferenceEngine.State.ModelReady) engine.cleanUp()
-
+            // Copy first: a native-engine initialization stall must not prevent the model
+            // file from being prepared or leave the UI stuck on a misleading status.
             val modelFile = withContext(Dispatchers.IO) {
                 val dir = File(context.filesDir, "models").apply { mkdirs() }
                 val safeName = activeModel.name.replace(Regex("[^A-Za-z0-9._-]"), "_")
@@ -67,12 +62,27 @@ fun InferenceChatScreen(activeModel: ImportedModel?) {
                 check(temp.renameTo(target)) { "模型文件保存失败，请检查存储空间" }
                 target
             }
+            status = "模型文件已准备，正在初始化推理引擎…"
+            val readyState = withTimeout(180_000) {
+                engine.state.first {
+                    it is InferenceEngine.State.Initialized ||
+                        it is InferenceEngine.State.ModelReady ||
+                        it is InferenceEngine.State.Error
+                }
+            }
+            if (readyState is InferenceEngine.State.Error) throw readyState.exception
+            if (readyState is InferenceEngine.State.ModelReady) engine.cleanUp()
+
             status = "正在加载模型，首次加载可能需要一些时间…"
             engine.loadModel(modelFile.absolutePath)
             engine.setSystemPrompt("你是 Cyhai AI，一个运行在用户手机本地的中文 AI 助手。请清晰、准确地回答。")
             status = "模型已加载，可以开始聊天"
         } catch (e: Exception) {
-            status = "模型加载失败：${e.message ?: e.javaClass.simpleName}"
+            status = if (e is kotlinx.coroutines.TimeoutCancellationException) {
+                "推理引擎初始化超时（180 秒）。请退出应用重开；若仍失败，需要检查原生库初始化日志。"
+            } else {
+                "模型加载失败：${e.message ?: e.javaClass.simpleName}"
+            }
         } finally {
             busy = false
         }
