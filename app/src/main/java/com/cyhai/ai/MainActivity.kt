@@ -188,7 +188,7 @@ private fun CyhaiApp(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (tab) {
-                AppTab.CHAT -> ChatScreen(models.firstOrNull { it.id == selectedModelId })
+                AppTab.CHAT -> InferenceChatScreen(models.firstOrNull { it.id == selectedModelId })
                 AppTab.HISTORY -> HistoryScreen()
                 AppTab.MODELS -> ModelScreen(
                     models = models,
