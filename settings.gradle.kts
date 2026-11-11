@@ -6,4 +6,5 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = "CyhaiAI"
-include(":app")
+include(":app", ":llama-runtime")
+project(":llama-runtime").projectDir = file("llama.cpp/examples/llama.android/lib")
