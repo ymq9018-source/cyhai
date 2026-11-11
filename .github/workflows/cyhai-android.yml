@@ -2,6 +2,8 @@ name: Cyhai Android build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [pocketpal-rebuild]
 
 permissions:
   contents: write
@@ -12,6 +14,7 @@ concurrency:
 
 jobs:
   bootstrap-and-build:
+    if: ${{ !contains(github.event.head_commit.message, 'bootstrap Cyhai from PocketPal') }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
