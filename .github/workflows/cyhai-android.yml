@@ -6,7 +6,7 @@ on:
     branches: [pocketpal-rebuild]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: cyhai-pocketpal-rebuild
@@ -33,17 +33,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pocketpal/.github/workflows" "$RUNNER_TEMP/pocketpal/scripts"
           cp "$GITHUB_WORKSPACE/.github/workflows/cyhai-android.yml" "$RUNNER_TEMP/pocketpal/.github/workflows/cyhai-android.yml"
           cp "$GITHUB_WORKSPACE/scripts/apply-cyhai-branding.sh" "$RUNNER_TEMP/pocketpal/scripts/apply-cyhai-branding.sh"
-          cd "$RUNNER_TEMP/pocketpal"
-          git init
-          git checkout -b pocketpal-rebuild
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "build: bootstrap Cyhai from PocketPal with Chinese default"
-          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push --force origin HEAD:pocketpal-rebuild
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "PocketPal source prepared in $RUNNER_TEMP/pocketpal"
 
       - name: Set up Java
         uses: actions/setup-java@v4
