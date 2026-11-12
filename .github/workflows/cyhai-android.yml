@@ -100,6 +100,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cyhai-pocketpal-arm64-debug-apk
-          path: android/app/build/outputs/apk/prod/debug/app-prod-debug.apk
+          path: ${{ runner.temp }}/pocketpal/android/app/build/outputs/apk/prod/debug/app-prod-debug.apk
           if-no-files-found: error
           retention-days: 14
