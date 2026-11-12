@@ -30,6 +30,28 @@ jobs:
           set -euo pipefail
           git clone --depth 1 https://github.com/a-ghorbani/pocketpal-ai.git "$RUNNER_TEMP/pocketpal"
           bash "$GITHUB_WORKSPACE/scripts/apply-cyhai-branding.sh" "$RUNNER_TEMP/pocketpal"
+          # CI-only Firebase placeholder: PocketPal uses Firebase solely for opt-in benchmark uploads.
+          # This allows local/offline app features to build; real benchmark uploads need the owner's Firebase config.
+          cat > "$RUNNER_TEMP/pocketpal/android/app/google-services.json" <<'JSON'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "cyhai-ci-placeholder",
+              "storage_bucket": "cyhai-ci-placeholder.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                  "android_client_info": { "package_name": "com.pocketpalai" }
+                },
+                "api_key": [ { "current_key": "CI_PLACEHOLDER_NOT_A_REAL_API_KEY" } ],
+                "services": {}
+              }
+            ],
+            "configuration_version": "1"
+          }
+          JSON
           mkdir -p "$RUNNER_TEMP/pocketpal/.github/workflows" "$RUNNER_TEMP/pocketpal/scripts"
           cp "$GITHUB_WORKSPACE/.github/workflows/cyhai-android.yml" "$RUNNER_TEMP/pocketpal/.github/workflows/cyhai-android.yml"
           cp "$GITHUB_WORKSPACE/scripts/apply-cyhai-branding.sh" "$RUNNER_TEMP/pocketpal/scripts/apply-cyhai-branding.sh"
