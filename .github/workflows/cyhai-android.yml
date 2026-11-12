@@ -57,7 +57,8 @@ jobs:
           if [ ! -x "$SDKMANAGER" ]; then
             SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -n 1)"
           fi
-          yes | "$SDKMANAGER" --licenses >/dev/null
+          # Avoid yes(1) receiving SIGPIPE when sdkmanager exits early.
+          printf "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n" | "$SDKMANAGER" --licenses
           "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.1.12297006"
 
       - name: Install dependencies
